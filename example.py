@@ -32,7 +32,8 @@ import torchvision.transforms as transforms
 import os
 import argparse
 
-from src.models.sequence.ss.standalone.s4 import S4
+from src.models.sequence.ss.standalone.s4d import S4D as S4
+#from src.models.sequence.ss.standalone.s4 import S4
 from tqdm.auto import tqdm
 
 
@@ -163,9 +164,10 @@ class S4Model(nn.Module):
             self.s4_layers.append(
                 S4(
                     d_model=d_model, 
-                    l_max=1024, 
+                    #l_max=1024, 
                     bidirectional=True,
                     postact='glu',
+                    # postact='relu',
                     dropout=dropout, 
                     transposed=True,
                 )
@@ -288,7 +290,36 @@ def setup_optimizer(model, lr, weight_decay, patience):
 
     return optimizer, scheduler
 
+def setup_optimizer_simple(model, lr, weight_decay, patience):
+    """
+    S4 requires a specific optimizer setup.
+
+    The S4 layer (A, B, C, dt) parameters typically 
+    require a smaller learning rate (typically 0.001), with no weight decay. 
+
+    The rest of the model can be trained with a higher learning rate (e.g. 0.004, 0.01) 
+    and weight decay (if desired).
+    """
+
+    # All parameters in the model
+    all_parameters = list(model.parameters())
+    # optimizer = optim.AdamW(
+    #     all_parameters, 
+    #     lr=lr, 
+    #     weight_decay=weight_decay,
+    # )
+    optimizer = optim.Adam(all_parameters, lr=lr)
+    
+    # Create a lr scheduler
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=patience, factor=0.2)
+    
+    return optimizer, scheduler
+
+
 criterion = nn.CrossEntropyLoss()
+# optimizer, scheduler = setup_optimizer_simple(
+#     model, lr=args.lr, weight_decay=args.weight_decay, patience=args.patience
+# )
 optimizer, scheduler = setup_optimizer(
     model, lr=args.lr, weight_decay=args.weight_decay, patience=args.patience
 )
@@ -362,6 +393,7 @@ def eval(epoch, dataloader, checkpoint=False):
 
         return acc
 
+# pbar = tqdm(range(start_epoch, start_epoch+10))
 pbar = tqdm(range(start_epoch, start_epoch+200))
 for epoch in pbar:
     if epoch == 0:
