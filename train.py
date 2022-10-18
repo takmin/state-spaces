@@ -99,13 +99,15 @@ class SequenceLightningModule(pl.LightningModule):
 
     def _check_config(self):
         assert self.hparams.train.state.mode in [None, "none", "null", "reset", "bptt", "tbptt"]
+        n = self.hparams.train.state.n_context
         assert (
-            (n := self.hparams.train.state.n_context) is None
+            n is None
             or isinstance(n, int)
             and n >= 0
         )
+        n = self.hparams.train.state.n_context_eval
         assert (
-            (n := self.hparams.train.state.n_context_eval) is None
+            n is None
             or isinstance(n, int)
             and n >= 0
         )
@@ -183,7 +185,9 @@ class SequenceLightningModule(pl.LightningModule):
         x, state = self.model(x, *w, state=self._state)
         self._state = state
         x, *w = self.decoder(x, state, *z)
-        return x, y, *w
+        #return x, y, *w
+        ret = x, y, *w
+        return ret
 
     @torch.inference_mode()
     def forward_recurrence(self, batch, k=1):
@@ -210,7 +214,9 @@ class SequenceLightningModule(pl.LightningModule):
 
             x_all.append(x_t)
             w_all.append(w_t)
-        return torch.stack(x_all), y, *[torch.stack(w_) for w_ in zip(*w_all)]
+        #return torch.stack(x_all), y, *[torch.stack(w_) for w_ in zip(*w_all)]
+        ret = torch.stack(x_all), y, *[torch.stack(w_) for w_ in zip(*w_all)]
+        return ret
 
     def _shared_step(self, batch, batch_idx, prefix="train"):
 

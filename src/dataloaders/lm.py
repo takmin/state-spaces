@@ -175,7 +175,8 @@ class LMOrderedIterator:
 
     def __iter__(self):
         self.epoch += 1
-        if (n := self.n_epoch_double) > 0 and self.epoch > 0 and self.epoch % n == 0:
+        n = self.n_epoch_double
+        if n > 0 and self.epoch > 0 and self.epoch % n == 0:
             if self.batch_size > 1:
                 log.info(f"LM Iterator doubling length from {self.l_max} to {self.l_max*2}")
                 self.l_max *= 2

@@ -26,7 +26,8 @@ from src.utils import permutations, is_list
 import pickle
 
 # Default data path is environment variable or hippo/data
-if (default_data_path := os.getenv("DATA_PATH")) is None:
+default_data_path = os.getenv("DATA_PATH")
+if default_data_path is None:
     default_data_path = Path(__file__).parent.parent.parent.absolute()
     default_data_path = default_data_path / "data"
 else:
@@ -1508,7 +1509,9 @@ class QuantizedAutoregressiveAudio(SequenceDataset):
             x = torch.stack(x, dim=0)[:, ::resolution]
             y = torch.stack(y, dim=0)[:, ::resolution]
             z = [torch.stack(e, dim=0)[:, ::resolution] for e in z]
-            return x, y, *z
+            #return x, y, *z
+            ret = x, y, *z
+            return ret
 
         def collate_fn_2(batch, resolution=1):
             x, y, *z = zip(*batch)
